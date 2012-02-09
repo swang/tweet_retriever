@@ -1,0 +1,11 @@
+{
+	"tweets_per_call": 200, 
+	"tweets_hard_limit": 2000,
+	"screen_name" : "",
+	
+	"access_token": "",
+	"access_secret":  "",
+	
+	"consumer_token": "",
+	"consumer_secret": ""
+}
