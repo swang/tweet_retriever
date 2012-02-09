@@ -9,7 +9,7 @@ Requires you to setup an application and fill-in a consumer token/secret as well
 
 License
 ------------
-Copyright (c) 2012, Shuan Wang
+Copyright (c) 2012, Shuan Wang.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
