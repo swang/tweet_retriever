@@ -94,7 +94,7 @@ module TweetRetriever
 		def url( url, redo_msg ="" ) 
 			begin 
 				@response = @@access_token.request(:get, url )
-				puts "Redoing #{url}" unless @response.is_a?(Net::HTTPOK)
+				puts redo_msg unless redo_msg.empty? || @response.is_a?(Net::HTTPOK) 
 			end until @response.is_a?(Net::HTTPOK)
 		end	
 		def get_json
