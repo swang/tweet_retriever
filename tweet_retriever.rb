@@ -1,9 +1,11 @@
+
+$: << "."
 require "oauth"
 require "json"
 # require "ap"
 require "time"
 
-
+require "lib/tweet_retriever_config"
 
 def prepare_access_token(oauth_token, oauth_token_secret, consumer_token, consumer_secret)
   	consumer = OAuth::Consumer.new(	consumer_token, 
@@ -15,38 +17,11 @@ def prepare_access_token(oauth_token, oauth_token_secret, consumer_token, consum
 	}
   	access_token = OAuth::AccessToken.from_hash(consumer, token_hash )
 end
-module TweetRetriever
-	class Config
-		#attr_accessor :config
-		def initialize( filename )
-			config = JSON::parse(File.read( filename )) rescue abort("Cannot Parse JSON Config file: config.json")
-			config.each {|key, value|
-				instance_variable_set("@" + key, value)
-				self.class.send :define_method, key.to_sym do
-					instance_variable_get("@" + key)
-				end
-			}
-			checks
-			create_json_dir
-		end
-		
-		# Make Config checks
-		def checks
-			config = {}
-			abort "Consumer and Access Token information is not set" if ( 
-				access_token.empty? ||
-				access_secret.empty? ||
-				consumer_token.empty? ||
-				consumer_secret.empty?
-			)
-			abort "No screenname specified" if (screen_name.empty?)
-		end
-		
-		def create_json_dir
-			Dir.mkdir("./json") if Dir["./json"].length == 0 rescue abort("Cannot create directory to store JSON")
-		end
-	end
-end
+
+
+
+#abort
+
 
 config = TweetRetriever::Config.new("config.json")
 
@@ -61,6 +36,7 @@ access_token = prepare_access_token( config.access_token, config.access_secret, 
 
 response = access_token.request(:get, "http://api.twitter.com/1/users/show.json?screen_name=" + screen_name )
 results_user = JSON::parse(response.body)
+
 name = results_user['name']
 total_tweets = [ results_user["statuses_count"], config.tweets_hard_limit ].min
 times_to_loop = (total_tweets * 1.0 / tweets_per_call).ceil
@@ -78,19 +54,18 @@ times_to_loop.times { |pg|
 		dtm = dt.strftime("%m")
 		tweet_section[dty] ||= {}
 		tweet_section[dty][dtm] ||= []
-		tweet_section[dty][dtm] << {
-			"name" => name,
-			"screen_name" => screen_name,
-			"id" => twt['id'],
-			"text" => twt['text'],
-			"created_at" => twt['created_at'],
-			"in_reply_to_screen_name" => twt['in_reply_to_screen_name'],
-			"in_reply_to_status_id" => twt["in_reply_to_status_id"]  
-		}
+		
+		
+		
+		tweet_section[dty][dtm] << TweetRetriever.grab do |tweet|
+			name name
+			screen_name screen_name
+			id twt['id']
+			text twt['text']
+			created_at twt['created_at']
+			in_reply_to_screen_name twt['in_reply_to_screen_name']
+			in_reply_to_status_id twt["in_reply_to_status_id"]  
+		end
 	}
 }
-tweet_section.each { |month, day_keys|
-	day_keys.each { |day, tweet|
-		File.open("./json/" + month + "_" + day + ".json",'w') {|f| f.write( JSON.pretty_generate(tweet) ) }
-	}
-}
+TweetRetriever.write_to_disk( tweet_section )
