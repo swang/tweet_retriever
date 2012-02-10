@@ -3,7 +3,7 @@ require "json"
 # require "ap"
 require "time"
 
-config = JSON::parse(File.read("./config.json")) rescue abort("Cannot Parse JSON Config file: config.json")
+
 
 def prepare_access_token(oauth_token, oauth_token_secret, consumer_token, consumer_secret)
   	consumer = OAuth::Consumer.new(	consumer_token, 
@@ -15,30 +15,54 @@ def prepare_access_token(oauth_token, oauth_token_secret, consumer_token, consum
 	}
   	access_token = OAuth::AccessToken.from_hash(consumer, token_hash )
 end
+module TweetRetriever
+	class Config
+		#attr_accessor :config
+		def initialize( filename )
+			config = JSON::parse(File.read( filename )) rescue abort("Cannot Parse JSON Config file: config.json")
+			config.each {|key, value|
+				instance_variable_set("@" + key, value)
+				self.class.send :define_method, key.to_sym do
+					instance_variable_get("@" + key)
+				end
+			}
+			checks
+			create_json_dir
+		end
+		
+		# Make Config checks
+		def checks
+			config = {}
+			abort "Consumer and Access Token information is not set" if ( 
+				access_token.empty? ||
+				access_secret.empty? ||
+				consumer_token.empty? ||
+				consumer_secret.empty?
+			)
+			abort "No screenname specified" if (screen_name.empty?)
+		end
+		
+		def create_json_dir
+			Dir.mkdir("./json") if Dir["./json"].length == 0 rescue abort("Cannot create directory to store JSON")
+		end
+	end
+end
 
-# Make Config checks
-abort "Consumer and Access Token information is not set" if ( config['access_token'].empty? ||
-														 	 config['access_secret'].empty? ||
-														 	 config['consumer_token'].empty? ||
-														 	 config['consumer_secret'].empty? )
-
-abort "No screenname specified" if (config['screen_name'].empty?)
-
-Dir.mkdir("./json") if Dir["./json"].length == 0 rescue abort("Cannot create directory to store JSON")
+config = TweetRetriever::Config.new("config.json")
 
 # Initialize some variables
 tweet_section = {}
 times_to_loop = 0
-tweets_per_call = config['tweets_per_call']
-screen_name = config['screen_name']
+tweets_per_call = config.tweets_per_call
+screen_name = config.screen_name
 
 # Exchange our oauth_token and oauth_token secret for the AccessToken instance.
-access_token = prepare_access_token( config['access_token'], config['access_secret'], config['consumer_token'], config['consumer_secret'] )
+access_token = prepare_access_token( config.access_token, config.access_secret, config.consumer_token, config.consumer_secret )
 
 response = access_token.request(:get, "http://api.twitter.com/1/users/show.json?screen_name=" + screen_name )
 results_user = JSON::parse(response.body)
 name = results_user['name']
-total_tweets = [ results_user["statuses_count"], config["tweets_hard_limit"]].min
+total_tweets = [ results_user["statuses_count"], config.tweets_hard_limit ].min
 times_to_loop = (total_tweets * 1.0 / tweets_per_call).ceil
 
 times_to_loop.times { |pg|
@@ -52,8 +76,8 @@ times_to_loop.times { |pg|
 		dt = DateTime.parse( twt['created_at'] )
 		dty = dt.strftime("%Y")
 		dtm = dt.strftime("%m")
-		tweet_section[dty] = {} if tweet_section[dty].nil?
-		tweet_section[dty][dtm] = [] if tweet_section[dty][dtm].nil?
+		tweet_section[dty] ||= {}
+		tweet_section[dty][dtm] ||= []
 		tweet_section[dty][dtm] << {
 			"name" => name,
 			"screen_name" => screen_name,
