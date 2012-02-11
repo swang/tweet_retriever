@@ -89,7 +89,7 @@ module TweetRetriever
 			access_token = OAuth::AccessToken.from_hash(consumer, token_hash )
 		end
 		def use_oauth( bool_value )
-			@use_oauth = true
+			@use_oauth = bool_value
 		end
 		def url( url, redo_msg ="" ) 
 			begin 
@@ -100,6 +100,7 @@ module TweetRetriever
 		def get_json
 			JSON::parse(@response.body)
 		end
+
 		def get( &block )
 			instance_eval(&block) if block_given?
 		end
