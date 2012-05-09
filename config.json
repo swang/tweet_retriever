@@ -1,6 +1,6 @@
 {
 	"tweets_per_call": 200, 
-	"tweets_hard_limit": 2000,
+	"tweets_hard_limit": 3200,
 	"screen_name" : "",
 	
 	"access_token": "",
