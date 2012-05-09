@@ -1,7 +1,7 @@
 TWEET RETRIEVER
 ===============
 
-This script retrieves the last 2000 tweets from an account using OAuth.
+This script retrieves the last 3200 tweets from an account using OAuth.
 
 Requirements
 ------------
